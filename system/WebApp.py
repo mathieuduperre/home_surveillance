@@ -317,7 +317,7 @@ def update_faces():
 def alarm_state():
      """Used to push alarm state to client"""
      while True:
-            alarmstatus = {'state': HomeSurveillance.alarmState , 'triggered': HomeSurveillance.alarmTriggerd }
+            alarmstatus = {'state': HomeSurveillance.alarmState , 'triggered': HomeSurveillance.alarmTriggered}
             socketio.emit('alarm_status', json.dumps(alarmstatus) ,namespace='/surveillance')
             time.sleep(3)
 
