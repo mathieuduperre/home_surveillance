@@ -838,36 +838,19 @@ class SurveillanceSystem(object):
         self.peopleDB.append('unknown')
 
     def change_alarm_state(self):
-        """Sends Raspberry PI a resquest to change the alarm state.
-        192.168.1.35 is the RPI's static IP address port 5000 is used
-        to access the flask application."""
-
-        r = requests.post('http://192.168.1.35:5000/change_state', data={"password": "admin"})
-        alarm_states = json.loads(r.text)
-
-        logger.info(alarm_states)
-        if alarm_states['state'] == 1:
-            self.alarmState = 'Armed'
-        else:
+        logger.info(self.alarmState)
+        logger.info(self.alarmTriggered)
+        if self.alarmState == 'Armed':
             self.alarmState = 'Disarmed'
-        self.alarmTriggered = alarm_states['triggered']
+            self.alarmTriggered = False
+        else:
+            self.alarmState = 'Armed'
 
     def trigger_alarm(self):
-        """Sends Raspberry PI a resquest to change to trigger the alarm.
-       192.168.1.35 is the RPI's static IP address port 5000 is used
-       to access the flask application."""
+        logger.info(self.alarmState)
+        logger.info(self.alarmTriggered)
 
-        r = requests.post('http://192.168.1.35:5000/trigger', data={"password": "admin"})
-        alarm_states = json.loads(r.text)
-
-        logger.info(alarm_states)
-
-        if alarm_states['state'] == 1:
-            self.alarmState = 'Armed'
-        else:
-            self.alarmState = 'Disarmed'
-
-        self.alarmTriggered = alarm_states['triggered']
+        self.alarmTriggered = True
         logger.info(self.alarmTriggered)
 
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
