@@ -753,7 +753,7 @@ class SurveillanceSystem(object):
     def take_action(self,alert):
         """Sends email alert and/or triggers the alarm"""
 
-        logger.info( "Taking action: ==" + alert.actions)
+        logger.info("Taking action")
         if alert.action_taken == False: # Only take action if alert hasn't accured - Alerts reinitialise every 5 min for now
             alert.eventTime = time.time()
             if alert.actions['email_alert'] == 'true':
@@ -768,8 +768,8 @@ class SurveillanceSystem(object):
     def send_email_notification_alert(self,alert):
         """ Code produced in this tutorial - http://naelshiab.com/tutorial-send-email-python/"""
 
-        fromaddr = "home.face.surveillance@gmail.com"
-        toaddr = alert.emailAddress
+        fromaddr = "vgunning.apps@gmail.com"
+        toaddr = "vgunning@cisco.com"
 
         msg = MIMEMultipart()
 
@@ -781,18 +781,18 @@ class SurveillanceSystem(object):
 
         msg.attach(MIMEText(body, 'plain'))
 
-        filename = "image.png"
-        attachment = open("notification/image.png", "rb")
-        part = MIMEBase('application', 'octet-stream')
-        part.set_payload((attachment).read())
-        encoders.encode_base64(part)
-        part.add_header('Content-Disposition', "attachment; filename= %s" % filename)
-
-        msg.attach(part)
+        # filename = "image.png"
+        # attachment = open("notification/image.png", "rb")
+        # part = MIMEBase('application', 'octet-stream')
+        # part.set_payload((attachment).read())
+        # encoders.encode_base64(part)
+        # part.add_header('Content-Disposition', "attachment; filename= %s" % filename)
+        #
+        # msg.attach(part)
 
         server = smtplib.SMTP('smtp.gmail.com', 587)
         server.starttls()
-        server.login(fromaddr, "facialrecognition")
+        server.login(fromaddr, "AppPassword")
         text = msg.as_string()
         server.sendmail(fromaddr, toaddr, text)
         server.quit()
@@ -843,6 +843,8 @@ class SurveillanceSystem(object):
         if self.alarmState == 'Armed':
             self.alarmState = 'Disarmed'
             self.alarmTriggered = False
+        elif self.alarmTriggered == True:
+            self.alarmTriggered = False
         else:
             self.alarmState = 'Armed'
 
@@ -852,6 +854,29 @@ class SurveillanceSystem(object):
 
         self.alarmTriggered = True
         logger.info(self.alarmTriggered)
+        self.send_email()
+
+    def send_email(self):
+        fromaddr = "vgunning.apps@gmail.com"
+        toaddr = "vgunning@cisco.com"
+
+        msg = MIMEMultipart()
+
+        msg['From'] = fromaddr
+        msg['To'] = toaddr
+        msg['Subject'] = "HOME SURVEILLANCE"
+
+        body = "NOTIFICATION ALERT: Test Email"
+
+        msg.attach(MIMEText(body, 'plain'))
+
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(fromaddr, "AppPassword")
+        text = msg.as_string()
+        server.sendmail(fromaddr, toaddr, text)
+        server.quit()
+
 
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
 class Person(object):
