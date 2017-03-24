@@ -125,7 +125,7 @@ def system_monitoring():
             app.logger.debug("FPS: " +str(camera.processingFPS) + " " + str(camera.streamingFPS))
         systemState = {'cpu':cpu_usage(),'memory':memory_usage(), 'processingFPS': cameraProcessingFPS}
         # commented out until we review the monitoring module
-        #socketio.emit('system_monitoring', json.dumps(systemState) ,namespace='/surveillance')
+        socketio.emit('system_monitoring', json.dumps(systemState) ,namespace='/surveillance')
         time.sleep(3)
 
 def cpu_usage():
@@ -336,7 +336,7 @@ def alarm_state():
      while True:
             alarmstatus = {'state': HomeSurveillance.alarmState , 'triggered': HomeSurveillance.alarmTriggerd }
             # commented out to reduce i/o in log until we review alarm module
-            #socketio.emit('alarm_status', json.dumps(alarmstatus) ,namespace='/surveillance')
+            socketio.emit('alarm_status', json.dumps(alarmstatus) ,namespace='/surveillance')
             time.sleep(3)
 
 
