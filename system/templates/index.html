@@ -1,5 +1,6 @@
 
-<!-- 
+
+<!--
 # Web Socket Server
 # Brandon Joffe
 # 2016
@@ -82,43 +83,7 @@
      <!--   <a href="#" class="sidebar-toggle" data-toggle="offcanvas" role="button">
         <span class="sr-only">Toggle navigation</span>
       </a> -->
-      <div class="navbar-custom-menu">
 
-        <ul class="nav navbar-nav">
-          <!-- Messages: style can be found in dropdown.less-->
-          <!-- User Account: style can be found in dropdown.less -->
-          <li class="dropdown user user-menu">
-            <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-              <img src="static/dist/img/brandonjoffe.png" class="user-image" alt="User Image">
-              <span class="hidden-xs">Brandon Joffe</span>
-            </a>
-            <ul class="dropdown-menu">
-              <!-- User image -->
-              <li class="user-header">
-                <img src="static/dist/img/brandonjoffe.png" class="img-circle" alt="User Image">
-
-                <p>
-                  Brandon Joffe  <small>Home Surveillance With Facial Recognition</small>
-                  <small>2016</small>
-                </p>
-              </li>
-            
-              <li class="user-footer">
-               <!--  <div class="pull-left">
-                  <a href="#" class="btn btn-default btn-flat">Profile</a>
-                </div> -->
-                <div class="pull-right">
-                  <a href="{{ url_for('login') }}" class="btn btn-default btn-flat">Log out</a>
-                </div>
-              </li>
-            </ul>
-          </li>
-          <!-- Control Sidebar Toggle Button -->
-          <li>
-            <a href="#" data-toggle="control-sidebar"><i class="fa fa-gears"></i></a>
-          </li>
-        </ul>
-      </div>
     </nav>
   </header>
   <!-- Left side column. contains the logo and sidebar -->
@@ -179,7 +144,8 @@
     <!-- Content Header (Page header) -->
     <section class="content-header">
       <h1>
-        <span class="logo-lg"><b>Home</b>Dashboard</span> 
+        <span class="logo-lg"><img src="http://alchemistaccelerator.com/wp-content/uploads/Cisco-Logo.png">
+            <b>Face Recognition Demo</span>
         
       </h1>
       <ol class="breadcrumb">
@@ -242,7 +208,7 @@
               <!--/.box -->
             <!-- ================================================================================================================================== -->
 
-              <div class="box box-solid bg-green-gradient">
+              <div class="box box-solid bg-blue-gradient">
                       <div class="box-header with-border">
                         <h3 class="box-title">Camera Control Panel</h3>
                           <div class="btn-group pull-right">
@@ -323,7 +289,7 @@
 
       <section class="col-lg-3 connectedSortable">
   <!-- ============================================================================================================================== -->
-          <div class="box box-solid bg-yellow-gradient">
+          <div class="box box-solid bg-blue-gradient">
               <div class="box-header with-border">
                 <h3 class="box-title">Create New Alert</h3>
 
@@ -348,7 +314,7 @@
                 <div class="row">
                   <div class="col-md-12">
                           <div class="col-md-12">
-                            <div class="box box-solid bg-yellow-gradient">
+                            <div class="box box-solid bg-blue-gradient">
                               <div class="box-header with-border">
                                Alerts
                               </div>
@@ -458,7 +424,7 @@
 
          <section class="col-lg-3 connectedSortable">
 
-             <div class="box box-solid bg-red-gradient">
+             <div class="box box-solid bg-blue-gradient">
                 <div class="box-header">
                   <i class="fa "></i>
 
@@ -505,7 +471,7 @@
 
              <div class="box box-solid bg-light-blue-gradient">
                   <div class="box-header with-border">
-                    <h3 class="box-title">Add New Face</h3>
+                    <h3 class="box-title">Learn New Face</h3>
                       <div class="btn-group pull-right">
                        <button type="button" class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i>
                       </button>
@@ -513,14 +479,16 @@
                  </div>
                   <!-- /.box-header -->
                   <div class="box-body">               
-                      <form method=POST enctype=multipart/form-data action="{{ url_for('upload') }}">
+                      <form method=POST action="{{ url_for('record_face') }}">
                          <div class=row>
                               <div class="col-md-12 col-sm-10 col-xs-10" >
-                                <input class="form-control" id="personName" name = "name" value="" placeholder="Enter new person's name" style="padding: 10px; margin-bottom: 10px; ">
+                                <input class="form-control" id="personName" name="name" value="" placeholder="Enter new person's name" style="padding: 10px; margin-bottom: 10px; ">
                               </div> 
                               <div class="col-md-12 col-sm-10 col-xs-10">
-                               <input type=file name=photo class="btn btn-xs pull-left" style="padding: 0">        
-                               <input type="submit" class="btn btn-primary btn-xs pull-right">
+                               <!-- <input type="submit" class="btn btn-primary btn-xs pull-right"> -->
+                               <button type="button" id="recordf" onclick="recordFace(1)" class="btn btn-success btn-xs" >
+                                <i class="fa"></i>Start Recording
+                               </button>
                               </div>
                          </div>  
                        </form>                      
@@ -534,16 +502,6 @@
                   </div>
                     <!-- /.box-body -->
                   <div class="box-footer text-center">
-                  
-                            <div class="pull-left">
-                              <p class="text-black">{{message}}</p>
-                            </div>
-                            <div class="btn-group pull-right">
-                               <button type="button" id="retrain" onclick="retrainClassifier()" class="btn btn-primary btn-xs" >
-                                        <i class="fa fa-refresh fa-fw"></i> Retrain Database
-                                </button>
-                           
-                          </div>
                   </div>
             <!-- /.box-footer -->
               </div>
@@ -610,8 +568,6 @@
     </div>
   <!-- /.content-wrapper -->
   <footer class="main-footer">
-    <strong>Copyright &copy; 2016 <a href="">Brandon Joffe</a>.</strong> All rights
-    reserved.
   </footer>
 
 
@@ -634,14 +590,32 @@
                                   data : {'camID': camID},
                                   success: function(cam) {
                                     console.log(cam);
-                                        $('#removecam').html('Removing Camera');
+                                        var element = document.getElementById("camID");
+                                        element.parentNode.removeChild(element);
                                   },
                                   error: function(error) {
                                     console.log(error);
                                   }
+
                             });
             }
 
+            function recordFace(camID) {
+                            var personName = document.getElementById("personName")
+                            var name = personName.value;
+
+                            console.log("Recording face on camera: " + camID + " person name: " + name);
+
+                            $('#recordf').html('<i class="fa fa-spin fa-cog fa-3x fa-fw" style="font-size:12px;"></i> Recording');
+
+                            $.ajax({
+                                  type: "POST",
+                                  url: "{{ url_for('record_face') }}",
+                                  data : {'camID': camID, 'personName': name}
+                            });
+
+                            $('#recordf').html('Start Recording');
+            }
 
              function addCamera() {
                             //getting selected option from dropdowns
@@ -690,7 +664,7 @@
                                         btn.setAttribute("class", "close"); 
                                         btn.setAttribute("data-dismiss", "alert");  
                                         btn.setAttribute("aria-hidden","true"); 
-                                        btn.setAttribute("onclick","removeCamera(this.id)"); 
+                                        btn.setAttribute("onclick","removeCamera(" + cam.camNum + ")");
                                         btn.setAttribute("id","camera_" + cam.camNum);
                                         btn.innerHTML = "&times;";
                                         camdiv.innerHTML = '<div class="text-center"><span>' + icon + '<div><strong>Camera '+ cam.camNum + ' FPS: <strong id="camera_' + cam.camNum+ '_fps">' + "Loading... </strong></div><div>" +'<font size="0.9">' + camURL+'<font></span></div>';
@@ -990,7 +964,7 @@
                                     inner.setAttribute("data-toggle","modal"); 
                                     inner.setAttribute("id","addfacebtnID"); 
                                     inner.setAttribute("data-target","#"+people[i].identity + "_"+ people[i].camera+"_modal"); 
-                                    inner.innerHTML = "Add New Face";
+                                    inner.innerHTML = "Learn New Face";
                                   
                                     listitem.appendChild(inner);
                                     list.appendChild(listitem);   
@@ -1263,7 +1237,7 @@
                                           btn.setAttribute("class", "close"); 
                                           btn.setAttribute("data-dismiss", "alert");  
                                           btn.setAttribute("aria-hidden","true"); 
-                                          btn.setAttribute("onclick","removeCamera(this.id)"); 
+                                          btn.setAttribute("onclick","removeCamera(" + system_data.cameras[i].camNum + ")");
                                           btn.setAttribute("id","camera_" + system_data.cameras[i].camNum);  
                                           btn.innerHTML = "&times;";
                                           camdiv.innerHTML = '<div class="text-center"><span>' + icon + '<div><strong>Camera '+ system_data.cameras[i].camNum + ' FPS: <strong id="camera_' + system_data.cameras[i].camNum+ '_fps">' + "Loading... </strong></div><div>" +'<font size="0.9">' + system_data.cameras[i].url +'<font>'+'</span></div>';

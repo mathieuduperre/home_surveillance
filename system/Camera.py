@@ -78,6 +78,7 @@ class IPCamera(object):
 		self.cameraFunction = cameraFunction 
 		self.dlibDetection = dlibDetection # Used to choose detection method for camera (dlib - True vs opencv - False)
 		self.fpsTweak = fpsTweak # used to know if we should apply the FPS work around when you have many cameras
+		self.recordFace = False # used to know if we need to record the video feed in a few picture files
 		self.rgbFrame = None
 		self.faceBoxes = None
 		self.captureEvent = threading.Event()
@@ -104,8 +105,9 @@ class IPCamera(object):
 	def get_frame(self):
 		logger.debug('Getting Frames')
 		FPScount = 0
+		PicsRecorded = 0
+		MaxPicsRecorded = 10
 		warmup = 0
-		#fpsTweak = 0  # set that to 1 if you want to enable Brandon's fps tweak. that break most video feeds so recommend not to
 		FPSstart = time.time()
 
 		while True:
@@ -113,7 +115,12 @@ class IPCamera(object):
 			self.captureEvent.clear() 
 			if success:		
 				self.captureFrame  = frame
-				self.captureEvent.set() 
+				self.captureEvent.set()
+				if self.RecordingFace:
+					if PicsRecorded < MaxPicsRecorded:
+						frame = cv2.flip(frame, 0)
+						out = cv2.imwrite('pics.png', frame)
+						PicsRecorded += 1
 
 			FPScount += 1 
 
@@ -128,6 +135,9 @@ class IPCamera(object):
 						time.sleep(1/CAPTURE_HZ)
 					else:
 						time.sleep(self.streamingFPS/(CAPTURE_HZ*CAPTURE_HZ))
+
+
+
 
 	def read_jpg(self):
 		"""We are using Motion JPEG, and OpenCV captures raw images,
@@ -157,6 +167,8 @@ class IPCamera(object):
 		frame = ImageUtils.resize_mjpeg(frame)
 		ret, jpeg = cv2.imencode('.jpg', frame)
 		return jpeg.tostring()
+
+
 
 	def dump_video_info(self):
 		logger.info("---------Dumping video feed info---------------------")

@@ -149,7 +149,8 @@ class SurveillanceSystem(object):
         #//////////////////////////////////////////////////// Camera Examples ////////////////////////////////////////////////////
         #self.cameras.append(Camera.IPCamera("testing/iphoneVideos/singleTest.m4v","detect_recognise_track",False)) # Video Example - uncomment and run code
         # self.cameras.append(Camera.IPCamera("http://192.168.1.33/video.mjpg","detect_recognise_track",False))
-        
+        #self.cameras.append(Camera.IPCamera("rtsp://198.48.221.102:554/user=admin_password=RgNNc3qH_channel=1_stream=0.sdp","detect_recognise_track",False, False))
+
         # processing frame threads 
         for i, cam in enumerate(self.cameras):       
           thread = threading.Thread(name='frame_process_thread_' + str(i),target=self.process_frame,args=(cam,))
@@ -171,9 +172,13 @@ class SurveillanceSystem(object):
 
    def remove_camera(self, camID):
         """remove a camera to the System and kill its processing thread"""
-        self.cameras.pop(camID)
-        self.cameraProcessingThreads.pop(camID)
-        self.captureThread.stop = False
+        logger.info('Removing camera from the cam array by popping id:' + camID)
+        iCam = int(camID)
+        # we need to set flag captureThread to false for the thread capturing
+        self.cameraProcessingThreads[iCam].stop = False
+        self.cameras.pop(iCam)
+        self.cameraProcessingThreads.pop(iCam)
+
 
    def process_frame(self,camera):
         """This function performs all the frame proccessing.

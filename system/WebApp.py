@@ -62,7 +62,6 @@ def login():
         else:
             session['user'] = request.form['username']
             return redirect(url_for('home'))
-
     return render_template('login.html', error = error)
 
 @app.route('/home')
@@ -123,9 +122,10 @@ def system_monitoring():
     
             cameraProcessingFPS.append("{0:.2f}".format(camera.processingFPS))
             #print "FPS: " +str(camera.processingFPS) + " " + str(camera.streamingFPS)
-            app.logger.info("FPS: " +str(camera.processingFPS) + " " + str(camera.streamingFPS))
+            app.logger.debug("FPS: " +str(camera.processingFPS) + " " + str(camera.streamingFPS))
         systemState = {'cpu':cpu_usage(),'memory':memory_usage(), 'processingFPS': cameraProcessingFPS}
-        socketio.emit('system_monitoring', json.dumps(systemState) ,namespace='/surveillance')
+        # commented out until we review the monitoring module
+        #socketio.emit('system_monitoring', json.dumps(systemState) ,namespace='/surveillance')
         time.sleep(3)
 
 def cpu_usage():
@@ -133,13 +133,13 @@ def cpu_usage():
       time.sleep(0.12)
       cpu_load = psutil.cpu_percent(interval=1, percpu=False)
       #print "CPU Load: " + str(cpu_load)
-      app.logger.info("CPU Load: " + str(cpu_load))
+      app.logger.debug("CPU Load: " + str(cpu_load))
       return cpu_load  
 
 def memory_usage():
      mem_usage = psutil.virtual_memory().percent
      #print "System Memory Usage: " + str( mem_usage)
-     app.logger.info("System Memory Usage: " + str( mem_usage))
+     app.logger.debug("System Memory Usage: " + str( mem_usage))
      return mem_usage 
 
 @app.route('/add_camera', methods = ['GET','POST'])
@@ -159,6 +159,15 @@ def add_camera():
         return jsonify(data)
     return render_template('index.html')
 
+@app.route('/record_face', methods = ['GET','POST'])
+def record_face():
+    # record the picture seen by the camera and store them for learning
+    if request.method == 'POST':
+        recordFace = request.form.get('recordface')
+        personName = request.form.get('personName')
+        app.logger.info("Starting recording camera feed to teach the system. Person recorded is:  " + str(personName))
+    return render_template('index.html')
+
 @app.route('/remove_camera', methods = ['GET','POST'])
 def remove_camera():
     if request.method == 'POST':
@@ -168,10 +177,10 @@ def remove_camera():
         data = {"camNum": len(HomeSurveillance.cameras) - 1}
         with HomeSurveillance.camerasLock:
             HomeSurveillance.remove_camera(camID)
-        app.logger.info("Removing camera number : " + data)
-        data = {"alert_status": "removed"}
-        return jsonify(data)
-    return render_template('index.html')
+        app.logger.info("Removing camera number : " + str(camID))
+        message = "Camera removed succesfully"
+    return render_template('index.html', message=message)
+
 
 @app.route('/create_alert', methods = ['GET','POST'])
 def create_alert():
@@ -255,8 +264,7 @@ def add_face():
             wriitenToDir = HomeSurveillance.add_face(predicted_name,img, upload = False)
 
         systemData = {'camNum': len(HomeSurveillance.cameras) , 'people': HomeSurveillance.peopleDB, 'onConnect': False}
-        socketio.emit('system_data', json.dumps(systemData) ,namespace='/surveillance')
-           
+
         data = {"face_added":  wriitenToDir}
         return jsonify(data)
     return render_template('index.html')
@@ -327,7 +335,8 @@ def alarm_state():
      """Used to push alarm state to client"""
      while True:
             alarmstatus = {'state': HomeSurveillance.alarmState , 'triggered': HomeSurveillance.alarmTriggerd }
-            socketio.emit('alarm_status', json.dumps(alarmstatus) ,namespace='/surveillance')
+            # commented out to reduce i/o in log until we review alarm module
+            #socketio.emit('alarm_status', json.dumps(alarmstatus) ,namespace='/surveillance')
             time.sleep(3)
 
 
