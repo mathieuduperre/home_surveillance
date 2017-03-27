@@ -148,21 +148,30 @@ def add_camera():
     if request.method == 'POST':  
         camURL = request.form.get('camURL')
         application = request.form.get('application')
-        detectionMethod = request.form.get('detectionMethod')  
+        detectionMethod = request.form.get('detectionMethod')
+        fpsTweak = request.form.get('fpstweak')
         with HomeSurveillance.camerasLock :
-            HomeSurveillance.add_camera(SurveillanceSystem.Camera.IPCamera(camURL,application,detectionMethod))  
+            HomeSurveillance.add_camera(SurveillanceSystem.Camera.IPCamera(camURL,application,detectionMethod,fpsTweak))
         data = {"camNum": len(HomeSurveillance.cameras) -1}
         app.logger.info("Addding a new camera with url: ")
         app.logger.info(camURL)
+        app.logger.info(fpsTweak)
         return jsonify(data)
     return render_template('index.html')
 
-# @app.route('/remove_camera', methods = ['GET','POST'])
-# def remove_camera():
-#     if request.method == 'POST':
-#         data = {"alert_status": "removed"}
-#         return jsonify(data)
-#     return render_template('index.html')
+@app.route('/remove_camera', methods = ['GET','POST'])
+def remove_camera():
+    if request.method == 'POST':
+        camID = request.form.get('camID')
+        app.logger.info("Removing camera: ")
+        app.logger.info(camID)
+        data = {"camNum": len(HomeSurveillance.cameras) - 1}
+        with HomeSurveillance.camerasLock:
+            HomeSurveillance.remove_camera(camID)
+        app.logger.info("Removing camera number : " + data)
+        data = {"alert_status": "removed"}
+        return jsonify(data)
+    return render_template('index.html')
 
 @app.route('/create_alert', methods = ['GET','POST'])
 def create_alert():
@@ -208,9 +217,9 @@ def remove_face():
     if request.method == 'POST':
         predicted_name = request.form.get('predicted_name')
         camNum = request.form.get('camera')
-     
+
         with HomeSurveillance.cameras[int(camNum)].peopleDictLock:
-            try:   
+            try:
                 del HomeSurveillance.cameras[int(camNum)].people[predicted_name]
                 app.logger.info("==== REMOVED: " + predicted_name + "===")
             except Exception as e:

@@ -84,6 +84,14 @@ args = parser.parse_args()
 start = time.time()
 np.set_printoptions(precision=2)
 
+try:
+    os.makedirs('logs', exist_ok=True)  # Python>3.2
+except TypeError:
+    try:
+        os.makedirs('logs')
+    except OSError as exc:  # Python >2.5
+        print "logging directory already exist"
+
 logger = logging.getLogger()
 formatter = logging.Formatter("(%(threadName)-10s) %(asctime)s - %(name)s - %(levelname)s - %(message)s")
 handler = RotatingFileHandler("logs/surveillance.log", maxBytes=10000000, backupCount=10)
@@ -110,7 +118,7 @@ class SurveillanceSystem(object):
     def __init__(self):
 
         self.recogniser = FaceRecogniser.FaceRecogniser()
-        self.trainingEvent = threading.Event() # Used to holt processing while training the classifier 
+        self.trainingEvent = threading.Event() # Used to holt processing while training the classifier
         self.trainingEvent.set()
         self.drawing = True
         self.alarmState = 'Disarmed' # Alarm states - Disarmed, Armed, Triggered
@@ -141,7 +149,6 @@ class SurveillanceSystem(object):
         #//////////////////////////////////////////////////// Camera Examples ////////////////////////////////////////////////////
         #self.cameras.append(Camera.IPCamera("testing/iphoneVideos/singleTest.m4v","detect_recognise_track",False)) # Video Example - uncomment and run code
         # self.cameras.append(Camera.IPCamera("http://192.168.1.33/video.mjpg","detect_recognise_track",False))
-        self.cameras.append(Camera.IPCamera("rtsp://198.48.221.102:554/user=admin_password=RgNNc3qH_channel=1_stream=0.sdp","detect_recognise_track",False))
 
         # processing frame threads 
         for i, cam in enumerate(self.cameras):
@@ -162,19 +169,25 @@ class SurveillanceSystem(object):
         self.cameraProcessingThreads.append(thread)
         thread.start()
 
+    def remove_camera(self, camID):
+        """remove a camera to the System and kill its processing thread"""
+        self.cameras.pop(camID)
+        self.cameraProcessingThreads.pop(camID)
+        self.captureThread.stop = False
+
     def process_frame(self,camera):
         """This function performs all the frame proccessing.
         It reads frames captured by the IPCamera instance,
         resizes them, and performs 1 of 5 functions"""
         logger.debug('Processing Frames')
         state = 1
-        frame_count = 0;
+        frame_count = 0
         FPScount = 0 # Used to calculate frame rate at which frames are being processed
         FPSstart = time.time()
         start = time.time()
-        stop = False
+        stop = camera.captureThread.stop
 
-        while True:
+        while not stop:
 
             frame_count +=1
             logger.debug("Reading Frame")
@@ -184,7 +197,7 @@ class SurveillanceSystem(object):
             frame = ImageUtils.resize(frame)
             height, width, channels = frame.shape
 
-            # Frame rate calculation 
+            # Frame rate calculation
             if FPScount == 6:
                 camera.processingFPS = 6/(time.time() - FPSstart)
                 FPSstart = time.time()
@@ -266,7 +279,7 @@ class SurveillanceSystem(object):
             elif camera.cameraFunction == "motion_detect_recognise":
                 # When motion is detected, consecutive frames are proccessed for faces.
                 # If no faces are detected for longer than 30 seconds the thread goes back to
-                # looking for motion 
+                # looking for motion
 
                 training_blocker = self.trainingEvent.wait()
 
@@ -365,7 +378,18 @@ class SurveillanceSystem(object):
                     personimg = cv2.flip(personimg, 1)
                     camera.faceBoxes = camera.faceDetector.detect_faces(personimg,camera.dlibDetection)
                     if self.drawing == True:
-                        camera.processing_frame = ImageUtils.draw_boxes(frame, peopleRects, False)
+                        frame = ImageUtils.draw_boxes(frame, peopleRects, False)
+
+                    for x, y, w, h in peopleRects:
+
+                        logger.debug('//// Proccessing People Segmented Areas ///')
+                        bb = dlib.rectangle(long(x), long(y), long(x+w), long(y+h))
+                        personimg = ImageUtils.crop(frame, bb, dlibRect = True)
+
+                        personimg = cv2.flip(personimg, 1)
+                        camera.faceBoxes = camera.faceDetector.detect_faces(personimg,camera.dlibDetection)
+                        if self.drawing == True:
+                            camera.processing_frame = ImageUtils.draw_boxes(frame, peopleRects, False)
 
                     for face_bb in camera.faceBoxes:
 
@@ -397,18 +421,18 @@ class SurveillanceSystem(object):
                                     #############################################################################################################################################################################
 
             elif camera.cameraFunction == "detect_recognise_track":
-                # This approach incorporates background subtraction to perform person tracking 
+                # This approach incorporates background subtraction to perform person tracking
                 # and is the most efficient out of the all proccesing funcions above. When
                 # a face is detected in a region a Tracker object it generated, and is updated
                 # every frame by comparing the last known region of the person, to new regions
-                # produced by the motionDetector object. Every update of the tracker a detected 
+                # produced by the motionDetector object. Every update of the tracker a detected
                 # face is compared to the person's face of whom is being tracked to ensure the tracker
                 # is still tracking the correct person. This is acheived by comparing the prediction
                 # and the the l2 distance between their embeddings (128 measurements that represent the face).
                 # If a tracker does not overlap with any of the regions produced by the motionDetector object
-                # for some time the Tracker is deleted. 
+                # for some time the Tracker is deleted.
 
-                training_blocker = self.trainingEvent.wait()  # Wait if classifier is being trained 
+                training_blocker = self.trainingEvent.wait()  # Wait if classifier is being trained
 
                 logger.debug('//// detect_recognise_track 1 ////')
                 peopleFound = False
@@ -430,7 +454,7 @@ class SurveillanceSystem(object):
 
                     peopleFound = True
                     person_bb = dlib.rectangle(long(x), long(y), long(x+w), long(y+h))
-                    personimg = ImageUtils.crop(frame, person_bb, dlibRect = True)   # Crop regions of interest 
+                    personimg = ImageUtils.crop(frame, person_bb, dlibRect = True)   # Crop regions of interest
 
                     personimg = cv2.flip(personimg, 1)
 
@@ -465,7 +489,7 @@ class SurveillanceSystem(object):
                                 if len(camera.faceBoxes) == 1:
                                     # if not the same person check to see if tracked person is unknown and update or change tracker accordingly
                                     # l2Distance is between 0-4 Openface found that 0.99 was the average cutoff between the same and different faces
-                                    # the same face having a distance less than 0.99 
+                                    # the same face having a distance less than 0.99
                                     if self.recogniser.getSquaredl2Distance(camera.trackers[i].person.rep ,predictions['rep']) > 0.99 and (camera.trackers[i].person.identity != predictedName):
 
                                         alreadyBeenDetected = False
@@ -509,7 +533,7 @@ class SurveillanceSystem(object):
                                 # If more than one face is detected in the region compare faces to the people being tracked and update tracker accordingly
                                 else:
                                     logger.info( "==> More Than One Face Detected <==")
-                                    # if tracker is already tracking the identified face make an update 
+                                    # if tracker is already tracking the identified face make an update
                                     if self.recogniser.getSquaredl2Distance(camera.trackers[i].person.rep ,predictions['rep']) < 0.99 and camera.trackers[i].person.identity == predictions['name']:
                                         if camera.trackers[i].person.confidence < predictions['confidence']:
                                             camera.trackers[i].person.confidence = predictions['confidence']
@@ -664,7 +688,7 @@ class SurveillanceSystem(object):
                 camera.processing_frame = frame
 
     def alert_engine(self):
-        """check alarm state -> check camera -> check event -> 
+        """check alarm state -> check camera -> check event ->
         either look for motion or look for detected faces -> take action"""
 
         logger.debug('Alert engine starting')
@@ -693,7 +717,7 @@ class SurveillanceSystem(object):
         """Used to check state of cameras
         to determine whether an event has occurred"""
 
-        if alert.camera != 'All':  # Check cameras   
+        if alert.camera != 'All':  # Check cameras
             logger.info( "alertTest" + alert.camera)
             if alert.event == 'Recognition': #Check events
                 logger.info(  "checkingalertconf "+ str(alert.confidence) + " : " + alert.person)
@@ -711,7 +735,7 @@ class SurveillanceSystem(object):
                             cv2.imwrite("notification/image.png", self.cameras[int(alert.camera)].processing_frame)#
                             self.take_action(alert)
                             return True
-                return False # Person has not been detected check next alert       
+                return False # Person has not been detected check next alert
 
             else:
                 logger.info( "alertTest4" + alert.camera)
@@ -738,7 +762,7 @@ class SurveillanceSystem(object):
                                 self.take_action(alert)
                                 return True
 
-                return False # Person has not been detected check next alert   
+                return False # Person has not been detected check next alert
 
             else:
                 with  self.camerasLock :
@@ -1009,3 +1033,6 @@ class Alert(object):
 
     def set_custom_alertmessage(self,message):
         self.alertString = message
+
+
+
