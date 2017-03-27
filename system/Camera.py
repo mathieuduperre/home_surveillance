@@ -116,11 +116,11 @@ class IPCamera(object):
 			if success:		
 				self.captureFrame  = frame
 				self.captureEvent.set()
-				if self.RecordingFace:
-					if PicsRecorded < MaxPicsRecorded:
-						frame = cv2.flip(frame, 0)
-						out = cv2.imwrite('pics.png', frame)
-						PicsRecorded += 1
+#				if self.RecordingFace:
+#					if PicsRecorded < MaxPicsRecorded:
+#						frame = cv2.flip(frame, 0)
+#						out = cv2.imwrite('pics.png', frame)
+#						PicsRecorded += 1
 
 			FPScount += 1 
 

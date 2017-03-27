@@ -264,6 +264,7 @@ def add_face():
             wriitenToDir = HomeSurveillance.add_face(predicted_name,img, upload = False)
 
         systemData = {'camNum': len(HomeSurveillance.cameras) , 'people': HomeSurveillance.peopleDB, 'onConnect': False}
+        socketio.emit('system_data', json.dumps(systemData), namespace='/surveillance')
 
         data = {"face_added":  wriitenToDir}
         return jsonify(data)
