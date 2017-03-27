@@ -855,6 +855,7 @@ class SurveillanceSystem(object):
         self.alarmTriggered = True
         logger.info(self.alarmTriggered)
         self.send_email()
+        self.send_sms()
 
     def send_email(self):
         fromaddr = "vgunning.apps@gmail.com"
@@ -876,6 +877,19 @@ class SurveillanceSystem(object):
         text = msg.as_string()
         server.sendmail(fromaddr, toaddr, text)
         server.quit()
+
+    def send_sms(self):
+        """Send text message alert for link status."""
+        message = "This is a test message"
+        phone_number = "+12087944322"
+        token = '616a6a726b49596c6b524173516d575a5a5541694b41794151524349456a4a6546796d6c544e5370794f4b4b'
+        url = 'https://api.tropo.com/1.0/sessions'
+        payload = {'token': token, 'msg': message, 'phone_number': phone_number}
+        req = requests.post(url, data=json.dumps(payload))
+        logger.info("Attempt to send SMS")
+        logger.info(json.dumps(payload))
+        if req.status_code != 200:
+            logger.error(req.text)
 
 
 #\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
